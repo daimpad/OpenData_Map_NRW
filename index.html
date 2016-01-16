@@ -1,0 +1,186 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Kommunale Open Data-Angebote in Nordrhein-Westfalen 2015</title>
+	<meta charset="utf-8" />
+
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+	<link rel="stylesheet" href="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.css" />
+
+	<style>
+		#map {
+			width: 100%;
+			height: 900px;
+		}
+
+		.info {
+			padding: 6px 8px;
+			font: 14px/16px Arial, Helvetica, sans-serif;
+			background: white;
+			background: rgba(255,255,255,0.8);
+			box-shadow: 0 0 15px rgba(0,0,0,0.2);
+			border-radius: 5px;
+		}
+		.info h4 {
+			margin: 0 0 5px;
+			color: #777;
+		}
+
+		.legend {
+			text-align: left;
+			line-height: 18px;
+			color: #555;
+		}
+		.legend i {
+			width: 18px;
+			height: 18px;
+			float: left;
+			margin-right: 8px;
+			opacity: 0.7;
+		}
+	</style>
+</head>
+<body>
+	<div id="map"></div>
+
+	<script src="http://cdn.leafletjs.com/leaflet/v0.7.7/leaflet.js"></script>
+
+	<script type="text/javascript" src="nrw.js"></script>
+	<script type="text/javascript">
+
+		var map = L.map('map').setView([51.4519616, 7.8010531], 8);
+
+		L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6IjZjNmRjNzk3ZmE2MTcwOTEwMGY0MzU3YjUzOWFmNWZhIn0.Y8bhBaUMqFiPrDRW9hieoQ', {
+			maxZoom: 18,
+			attribution: 'Map data &copy; <a href="http://openstreetmap.org">OpenStreetMap</a> contributors, ' +
+				'<a href="http://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+				'Imagery © <a href="http://mapbox.com">Mapbox</a>',
+			id: 'mapbox.light'
+		}).addTo(map);
+
+
+		// control that shows state info on hover
+		var info = L.control();
+
+		info.onAdd = function (map) {
+			this._div = L.DomUtil.create('div', 'info');
+			this.update();
+			return this._div;
+		};
+
+		info.update = function (props) {
+			this._div.innerHTML = '<h2>Kommunale Open Data-Angebote in <br> <br> Nordrhein-Westfalen 2015</h2>' +  (props ?
+				'<b>' + props.name + '</b><br />' + ''
+				: 'Mousover für weitere Informationen');
+		};
+
+		info.addTo(map);
+
+
+		// get color depending on population density value
+		function getColor(d) {
+			return d > 100  ? '#233755' :
+			       d > 50   ? '#FD8D3C' :
+			       d > 20   ? '#FEB24C' :
+			       d > 10   ? '#FED976' :
+			                  '#FFEDA0';
+		}
+
+		function style(feature) {
+			return {
+				weight: 2,
+				opacity: 1,
+				color: 'white',
+				dashArray: '3',
+				fillOpacity: 0.5,
+				fillColor: getColor(feature.properties.density)
+			};
+		}
+
+		function highlightFeature(e) {
+			var layer = e.target;
+
+			layer.setStyle({
+				weight: 5,
+				color: '#666',
+				dashArray: '',
+				fillOpacity: 0.5
+			});
+
+			if (!L.Browser.ie && !L.Browser.opera) {
+				layer.bringToFront();
+			}
+
+			info.update(layer.feature.properties);
+		}
+
+		var geojson;
+
+		function resetHighlight(e) {
+			geojson.resetStyle(e.target);
+			info.update();
+		}
+
+		function zoomToFeature(e) {
+			map.fitBounds(e.target.getBounds());
+		}
+
+		function onEachFeature(feature, layer) {
+			layer.on({
+				mouseover: highlightFeature,
+				mouseout: resetHighlight,
+				click: zoomToFeature
+			});
+		}
+
+		geojson = L.geoJson(statesData, {
+			style: style,
+			onEachFeature: onEachFeature
+		}).addTo(map);
+
+		map.attributionControl.addAttribution('by <a href="http://openall.info">Damian Paderta</a> Digitale Verwaltungsgrenzen DVG2 &copy; <a href="https://open.nrw/de/dataset/f9098786-f5af-4fc6-a775-5b9152c83161bkg"> Bezirksregierung Köln, Geobasis NRW</a>');
+	
+		
+		//Marker ergänzen
+		
+		var LeafIcon = L.Icon.extend({
+			options: {
+				iconSize:     [45, 61],
+				iconAnchor:   [10, 60],
+				popupAnchor:  [-3, -76]
+			}
+		});
+		
+			
+		// specify popup options 
+		var customOptions =
+        {
+			'maxWidth': '800',
+			'className' : 'custom'
+        }
+		
+		var greenIcon = new LeafIcon({iconUrl: './img/fahne.png'});
+		
+		L.marker([50.775346, 6.083887], {icon: greenIcon}).bindPopup('<br><center><h1>Aachen</h1></center></center><h2><img src= "./img/ja.png">&ensp;&ensp;Open Data Portal<br><img src="./img/ja.png">&ensp;&ensp;CKAN/DCAN<br><img src= "./img/ja.png">&ensp;&ensp;Maschinenlesbare Formate<br><img src= "./img/ja.png">&ensp;&ensp;Lizenz<br><img src= "./img/teilweise.png">&ensp;&ensp;OGD-Metadaten Pflichtfelder<br> <img src= "./img/nein.png">&ensp;&ensp;Anbindung Open.NRW Portal<br></h2> <a href="http://offenedaten.aachen.de"target="_blank">Website</a>').addTo(map);   	
+		
+		L.marker([50.73743, 7.098207], {icon: greenIcon}).bindPopup('<br><center><h1>Bonn</h1></center><h2><img src= "./img/ja.png">&ensp;&ensp;Open Data Portal <br><img src="./img/ja.png">&ensp;&ensp;CKAN/DCAN<br><img src= "./img/ja.png">&ensp;&ensp;Maschinenlesbare Formate<tab><br><img src= "./img/ja.png">&ensp;&ensp;Lizenz<br><img src= "./img/ja.png">&ensp;&ensp;OGD-Metadaten Pflichtfelder<br> <img src= "./img/ja.png">&ensp;&ensp;Anbindung Open.NRW Portal<br></h2><a href="http://opendata.bonn.de/"target="_blank"> Website</a>').addTo(map); 
+		
+		L.marker([50.937531, 6.960279], {icon: greenIcon}).bindPopup('<br><center><h1>Köln</h1></center><h2><img src= "./img/ja.png">&ensp;&ensp;Open Data Portal <br><img src="./img/ja.png">&ensp;&ensp;CKAN/DCAN<br><img src= "./img/ja.png">&ensp;&ensp;Maschinenlesbare Formate<tab><br><img src= "./img/ja.png">&ensp;&ensp;Lizenz<br><img src= "./img/ja.png">&ensp;&ensp;OGD-Metadaten Pflichtfelder<br> <img src= "./img/ja.png">&ensp;&ensp;Anbindung Open.NRW Portal<br></h2><a href="http://www.offenedaten-koeln.de/		"target="_blank"> Website</a>').addTo(map); 
+		
+		L.marker([51.451604, 6.640815], {icon: greenIcon}).bindPopup('<br><center><h1>Moers</h1></center><h2><img src= "./img/ja.png">&ensp;&ensp;Open Data Portal <br><img src="./img/ja.png">&ensp;&ensp;CKAN/DCAN<br><img src= "./img/ja.png">&ensp;&ensp;Maschinenlesbare Formate<tab><br><img src= "./img/ja.png">&ensp;&ensp;Lizenz<br><img src= "./img/ja.png">&ensp;&ensp;OGD-Metadaten Pflichtfelder<br> <img src= "./img/nein.png">&ensp;&ensp;Anbindung Open.NRW Portal<br></h2><a href="https://www.offenesdatenportal.de/organization/moers"target="_blank"> Website</a>').addTo(map); 
+		
+		L.marker([51.407338, 8.052771], {icon: greenIcon}).bindPopup('<br><center><h1>Arnsberg</h1></center><h2><img src= "./img/ja.png">&ensp;&ensp;Open Data Portal <br><img src="./img/ja.png">&ensp;&ensp;CKAN/DCAN<br><img src= "./img/ja.png">&ensp;&ensp;Maschinenlesbare Formate<tab><br><img src= "./img/ja.png">&ensp;&ensp;Lizenz<br><img src= "./img/nein.png">&ensp;&ensp;OGD-Metadaten Pflichtfelder<br> <img src= "./img/nein.png">&ensp;&ensp;Anbindung Open.NRW Portal<br></h2><a href="http://www.arnsberg.de/open-data/index.php"target="_blank"> Website</a>').addTo(map); 
+		
+		L.marker([51.481845, 7.216236], {icon: greenIcon}).bindPopup('<br><center><h1>Bochum</h1></center><h2><img src= "./img/ja.png">&ensp;&ensp;Open Data Portal <br><img src="./img/nein.png">&ensp;&ensp;CKAN/DCAN<br><img src= "./img/ja.png">&ensp;&ensp;Maschinenlesbare Formate<tab><br><img src= "./img/ja.png">&ensp;&ensp;Lizenz<br><img src= "./img/teilweise.png">&ensp;&ensp;OGD-Metadaten Pflichtfelder<br> <img src= "./img/nein.png">&ensp;&ensp;Anbindung Open.NRW Portal<br></h2><a href="http://www.bochum.de/opendata" target="_blank">Website</a>').addTo(map); 
+		
+		L.marker([51.180457, 6.442804], {icon: greenIcon}).bindPopup('<br><center><h1>Mönchengladbach</h1></center><h2><img src= "./img/ja.png">&ensp;&ensp;Open Data Portal <br><img src="./img/nein.png">&ensp;&ensp;CKAN/DCAN<br><img src= "./img/ja.png">&ensp;&ensp;Maschinenlesbare Formate<tab><br><img src= "./img/ja.png">&ensp;&ensp;Lizenz<br><img src= "./img/teilweise.png">&ensp;&ensp;OGD-Metadaten Pflichtfelder<br> <img src= "./img/nein.png">&ensp;&ensp;Anbindung Open.NRW Portal<br></h2><a href="http://offenedaten.moenchengladbach.de" target="_blank">Website</a>').addTo(map); 
+		
+		L.marker([51.418568, 6.884523], {icon: greenIcon}).bindPopup('<br><center><h1>Mülheim an der Ruhr</h1></center><h2><img src= "./img/ja.png">&ensp;&ensp;Open Data Portal <br><img src="./img/nein.png">&ensp;&ensp;CKAN/DCAN<br><img src= "./img/ja.png">&ensp;&ensp;Maschinenlesbare Formate<tab><br><img src= "./img/ja.png">&ensp;&ensp;Lizenz<br><img src= "./img/teilweise.png">&ensp;&ensp;OGD-Metadaten Pflichtfelder<br> <img src= "./img/nein.png">&ensp;&ensp;Anbindung Open.NRW Portal<br></h2><a href="https://geo.muelheim-ruhr.de/open-data"target="_blank"> Website</a>').addTo(map); 
+		
+		L.marker([51.256213, 7.150764], {icon: greenIcon}).bindPopup('<br><center><h1>Wuppertal</h1></center><h2><img src= "./img/ja.png">&ensp;&ensp;Open Data Portal <br><img src="./img/nein.png">&ensp;&ensp;CKAN/DCAN<br><img src= "./img/ja.png">&ensp;&ensp;Maschinenlesbare Formate<tab><br><img src= "./img/ja.png">&ensp;&ensp;Lizenz<br><img src= "./img/teilweise.png">&ensp;&ensp;OGD-Metadaten Pflichtfelder<br> <img src= "./img/nein.png">&ensp;&ensp;Anbindung Open.NRW Portal<br></h2><a href="https://www.wuppertal.de/rathaus-buergerservice/offene_daten/"target="_blank"> Website</a>').addTo(map); 
+	   
+	</script>
+</body>
+</html>
